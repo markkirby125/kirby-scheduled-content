@@ -2,14 +2,15 @@
 name: kirby-scheduled-content
 description: "Use when implementing an architectural pattern for securely scheduling and gating static content publishing at the edge."
 category: pattern
-triggers: [scheduled-publishing, static-site, edge-worker, content-gating, ssg, cloudflare-workers]
+triggers: [scheduled-publishing, edge-worker, content-gating, ssg, cloudflare-workers]
 ---
 
 # Scheduled Content Publishing — Edge-Gated Design (Portable Pattern)
 
 **Pattern ID:** SCHED-EDGE-001
-**Status:** Approved design (awaiting owner approval of implementation on this project — T103)
-**Scope of this doc:** project-agnostic design, reusable on any static-site + edge-worker setup. The BITS-specific application lives in `docs/superpowers/plans/2026-09-07-scheduled-blog-publishing-plan.md`.
+**Status:** Approved portable design.
+**Scope of this doc:** project-agnostic design, reusable on any static-site + edge-worker setup.
+**Related:** Shared nav/header/footer drift on flat HTML is `kirby-chrome-drift-prevention`. CMS staging, publishing velocity, and satellite deploys are `kirby-seo-deployment`.
 
 ---
 

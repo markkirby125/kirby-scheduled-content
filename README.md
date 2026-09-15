@@ -4,7 +4,7 @@
 
 An architectural pattern and test matrix for securely gating and scheduling static content publishing at the edge.
 
-This skill equips AI agents with the blueprints necessary to build resilient edge-worker logic (e.g., Cloudflare Workers, Vercel Edge Middleware) that strictly hides pre-published static content from users, APIs, crawlers, and sitemaps until a precise UNIX timestamp is reached.
+This skill equips AI agents with the blueprints necessary to build resilient edge-worker logic (e.g., Cloudflare Workers, Vercel Edge Middleware) that strictly hides pre-published static content from users, APIs, crawlers, and sitemaps until a zoned ISO 8601 `publishAt` timestamp is reached.
 
 ## 🪄 The Magic Prompt
 
