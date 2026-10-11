@@ -4,7 +4,7 @@ description: "Use when implementing an architectural pattern for securely schedu
 category: pattern
 triggers: [scheduled-publishing, edge-worker, content-gating, ssg, cloudflare-workers]
 risk: unverified
-author: william-fitzpatrick
+author: paul-kirby
 tags: [kirby, ai-agent, workflow]
 ---
 
