@@ -108,8 +108,19 @@ An unpublished post must be absent from **every surface that enumerates content*
 ### 3.4 Fallback and failure modes
 
 - **Worker unavailable / bypassed** (e.g. misconfig removes `run_worker_first`, or a future platform migration serves assets directly): the gate silently disappears and all scheduled content is live. Mitigations: a config test asserting worker-first is enabled; a pre-deploy check that the schedule file has no entries older than today (stale schedules mean the worker *and only the worker* was ever hiding content — keep the list pruned).
+- **Rescheduling or unscheduling a page that already has impressions**: re-gating returns 404 + `noindex` for a URL that search engines have already seen, which can take it out of results once it is recrawled and can lose accumulated signals (directional, unverified). Once a slug has impressions (check Search Console before editing), do not move its `publishAt` into the future or add it back to the schedule; unpublish only deliberately, with a redirect or 410 decided per URL and implemented in host or CDN rules (outside this pattern, which only serves or 404s), not via the gate. If a rescheduled slug is unavoidable, note that the 404 only applies to requests that reach the worker: copies already cached by browsers, intermediaries or crawlers may keep serving the old 200, and this pattern has no purge step, so plan any cache purge separately. Record the reason in the commit message; test item 10 in §3.5 covers it.
 - **Clock skew**: edge workers are UTC-accurate to seconds; not a concern. Do not build minute-level "grace period" logic — the requirement is "hidden until X", and serving at exactly X is correct.
 - **Slug typos in the schedule**: a scheduled slug with no matching deployed page just means the gate never fires — harmless. A deployed page missing from the schedule publishes immediately — the failure mode to test for. Test: every slug in the deployed blog tree is either in the schedule or intentionally public (a build-time drift check).
+
+### 3.4a Cadence guard (warn on bursty schedules)
+
+The validator in §3.1 checks entry shape and timestamp format but enforces no distribution or spacing, so a schedule can put 50 posts live in one minute. Bursts of near-identical publication times, and perfectly regular spacing, are reported to read as automated mass publishing (directional, unverified; not a confirmed Google rule). Add a non-blocking warning to the schedule validation, with thresholds the owner can change:
+
+- **Same-hour burst:** warn if more than `N_hour` entries (suggested start: 2) share one UTC hour.
+- **Same-day burst:** warn if more than `N_day` entries (suggested start: 5) share one UTC day.
+- **Mechanical spacing:** warn if `N_regular` or more consecutive entries (suggested start: 4) are spaced by an interval identical down to the minute and shorter than `N_interval` (suggested start: 24 hours). A real weekly or daily calendar is not flagged. Flag the batch once, not each post.
+- Thresholds are local editorial policy, not Google numbers. The warning explains the count and the affected slugs; it never blocks a deploy and never rewrites `publishAt` values on its own. It considers future, unpublished entries only. The owner decides whether a burst is legitimate (a launch, an embargo, a series) and records the reason in the commit message or review note that edits the schedule (the §3.1 schema stays `{ slug, publishAt }`).
+- Do not "fix" a warning by adding random jitter to timestamps: that is cosmetic cadence-masking, not editorial planning. Space posts because the content calendar is real. For the wider velocity guidance, see `../../kirby-seo-deployment/references/module_7_deployment_staging_publishing_velocity_network_isolation.md` §7.2.
 
 ### 3.5 Test matrix (minimum)
 
@@ -121,6 +132,8 @@ An unpublished post must be absent from **every surface that enumerates content*
 6. Blog index/manifest excludes scheduled slugs (per chosen strategy).
 7. Schedule-module drift check: every deployed blog slug accounted for.
 8. Time-injection: gate logic takes `now` as a parameter (pure function) so tests don't fake the clock.
+9. Cadence guard (§3.4a): one fixture per rule, each built to trip only that rule and stay inside the other thresholds (more than `N_hour` entries in one UTC hour; more than `N_day` in one UTC day across distinct hours; `N_regular` identically spaced entries under `N_interval`), each produces a warning naming those slugs. A fixture within all thresholds, including a weekly calendar, produces none, and no fixture changes the exit code.
+10. Rescheduled slug: 404 before its new `publishAt`, 200 and present in the sitemap at and after it.
 
 ### 3.6 Porting checklist (for other projects)
 
@@ -130,7 +143,7 @@ To reuse on another site, replace the platform-specific bits:
 2. Identify the content surface tree to gate (here `/blog/<slug>/`; could be `/guides/`, `/news/`, any enumerable folder).
 3. Create the schedule file + typed wrapper (§3.1) in the source tree.
 4. Implement the gate (§3.2) and the discovery filters (§3.3) for that project's actual enumeration surfaces.
-5. Adopt the test matrix (§3.5); make `now` injectable first.
+5. Adopt the test matrix (§3.5); make `now` injectable first. Add the cadence guard (§3.4a) to the schedule validation.
 6. Add the drift check (§3.4) so "deployed but unscheduled" can never happen silently.
 
 ### 3.7 Anti-goals
